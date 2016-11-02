@@ -4,11 +4,9 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
 import com.ddchen.bridge.adbpc.AdbPc;
+import com.ddchen.bridge.pc.Promise.Callable;
 import com.ddchen.bridge.pcinterface.Caller;
-import com.ddchen.bridge.pcinterface.HandleCallResult;
 import com.ddchen.bridge.pcinterface.SandboxFunction;
-
-import org.json.JSONObject;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -39,30 +37,21 @@ public class MainActivity extends AppCompatActivity {
         });
 
         Caller caller = adbPc.pc(channel, commandDir, sandbox);
-        caller.call("add", new Object[]{1, 2}, new HandleCallResult() {
+        caller.call("add", new Object[]{1, 2}).then(new Callable() {
             @Override
-            public void handle(Object json) {
+            public Object call(Object json) {
                 System.out.println("++++===========================");
-
                 System.out.println(json);
-            }
-
-            @Override
-            public void handleError(JSONObject errorInfo) {
+                return null;
             }
         });
 
-        caller.call("error", new Object[]{}, new HandleCallResult() {
+        caller.call("error", new Object[]{}).doCatch(new Callable() {
             @Override
-            public void handle(Object json) {
-                System.out.println("++++===========================");
-                System.out.println(json);
-            }
-
-            @Override
-            public void handleError(JSONObject errorInfo) {
+            public Object call(Object errorInfo) {
                 System.out.println("error:++++===========================");
                 System.out.println(errorInfo);
+                return null;
             }
         });
     }

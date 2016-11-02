@@ -85,6 +85,7 @@ public class Promise {
     }
 
     private void consumeErrorWaits(Object obj) {
+        // catching list
         while (errorWaitingPromises.size() > 0) {
             final WaitingPromise first = errorWaitingPromises.remove(0);
             consumePromise(first.callable, obj).then(new Callable() {
@@ -94,6 +95,11 @@ public class Promise {
                     return null;
                 }
             });
+        }
+        // then list
+        while (waitingPromises.size() > 0) {
+            final WaitingPromise first = waitingPromises.remove(0);
+            first.finish.reject(obj);
         }
     }
 
@@ -130,7 +136,8 @@ public class Promise {
             if (!result.isException) {
                 return consumePromise(callable, result.value);
             } else {
-                return new Promise(null);
+                // just passing current callable
+                return this;
             }
         }
     }
@@ -144,7 +151,8 @@ public class Promise {
             if (result.isException) {
                 return consumePromise(callable, result.value);
             } else {
-                return new Promise(null);
+                // just passing current callable
+                return this;
             }
         }
     }

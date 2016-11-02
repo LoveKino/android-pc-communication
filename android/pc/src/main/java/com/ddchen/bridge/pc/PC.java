@@ -1,7 +1,8 @@
 package com.ddchen.bridge.pc;
 
+import com.ddchen.bridge.pc.Promise.Finish;
+import com.ddchen.bridge.pc.Promise.State;
 import com.ddchen.bridge.pcinterface.Caller;
-import com.ddchen.bridge.pcinterface.HandleCallResult;
 import com.ddchen.bridge.pcinterface.Listener;
 import com.ddchen.bridge.pcinterface.Listener.ListenHandler;
 import com.ddchen.bridge.pcinterface.Sender;
@@ -20,7 +21,7 @@ import static com.ddchen.bridge.pc.AssemblePCData.assembleRequestData;
  */
 
 public class PC {
-    private Map idMap = new HashMap();
+    private Map<String, Finish> idMap = new HashMap();
     private Caller caller = null;
 
     public PC(Listener listener, final Sender sender, Map sandbox) {
@@ -53,17 +54,21 @@ public class PC {
              * }
              */
             @Override
-            public void call(String name, Object[] args, HandleCallResult handleCallResult) {
+            public Promise call(final String name, final Object[] args) {
                 // generate id
-                String id = UUID.randomUUID().toString();
-                // map id
-                idMap.put(id, handleCallResult);
-
-                try {
-                    sender.send(assembleRequestData(name, args, id));
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
+                final String id = UUID.randomUUID().toString();
+                return new Promise(new State() {
+                    @Override
+                    public void appoint(Finish finish) {
+                        // map id
+                        idMap.put(id, finish);
+                        try {
+                            sender.send(assembleRequestData(name, args, id));
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
             }
         };
     }

@@ -1,7 +1,7 @@
 package com.ddchen.bridge.pc;
 
 import com.ddchen.bridge.pc.Promise.Callable;
-import com.ddchen.bridge.pcinterface.HandleCallResult;
+import com.ddchen.bridge.pc.Promise.Finish;
 import com.ddchen.bridge.pcinterface.Sender;
 
 import org.json.JSONArray;
@@ -21,9 +21,9 @@ import static com.ddchen.bridge.pc.SandboxRuner.getFunctionRet;
 public class MessageHandler {
     private Map sandbox;
     private Sender sender;
-    private Map idMap;
+    private Map<String, Finish> idMap;
 
-    public MessageHandler(Map sandbox, Sender sender, Map idMap) {
+    public MessageHandler(Map sandbox, Sender sender, Map<String, Finish> idMap) {
         this.sandbox = sandbox;
         this.sender = sender;
         this.idMap = idMap;
@@ -62,14 +62,12 @@ public class MessageHandler {
         JSONObject responseData = jObject.getJSONObject("data");
         String id = responseData.getString("id");
         if (idMap.containsKey(id)) {
-            HandleCallResult handleCallResult = (HandleCallResult) idMap.get(id);
-            if (handleCallResult != null) {
+            Finish finish = idMap.get(id);
+            if (finish != null) {
                 if (responseData.has("error") && responseData.get("error") != null) {
-                    handleCallResult.handleError(
-                            (JSONObject) responseData.get("error")
-                    );
+                    finish.reject(responseData.get("error"));
                 } else {
-                    handleCallResult.handle(responseData.get("data"));
+                    finish.resolve(responseData.get("data"));
                 }
                 idMap.remove(id);
             }
@@ -94,6 +92,16 @@ public class MessageHandler {
                     public Object call(Object prev) {
                         try {
                             sender.send(assembleResponse(prev, id));
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                        return null;
+                    }
+                }).doCatch(new Callable() {
+                    @Override
+                    public Object call(Object error) {
+                        try {
+                            sender.send(assembleErrorResponse((Exception) error, id));
                         } catch (JSONException e) {
                             e.printStackTrace();
                         }

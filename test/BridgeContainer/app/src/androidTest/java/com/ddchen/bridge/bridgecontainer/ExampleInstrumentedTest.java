@@ -5,8 +5,8 @@ import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
 
 import com.ddchen.bridge.adbpc.AdbPc;
+import com.ddchen.bridge.pc.Promise.Callable;
 import com.ddchen.bridge.pcinterface.Caller;
-import com.ddchen.bridge.pcinterface.HandleCallResult;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -27,6 +27,7 @@ import static org.junit.Assert.assertNull;
 @RunWith(AndroidJUnit4.class)
 public class ExampleInstrumentedTest {
     private Caller caller = null;
+
     {
         // Context of the app under test.
         AdbPc adbPc = new AdbPc();
@@ -34,6 +35,7 @@ public class ExampleInstrumentedTest {
         String channel = "/data/user/0/com.ddchen.bridge.bridgecontainer/files/aosp_hook/command.json";
         this.caller = adbPc.pc(channel, commandDir, null);
     }
+
     @Test
     public void useAppContext() throws Exception {
         // Context of the app under test.
@@ -46,9 +48,9 @@ public class ExampleInstrumentedTest {
         final CountDownLatch signal = new CountDownLatch(1);
         final Exception[] errors = {null};
 
-        caller.call("add", new Object[]{1, 2}, new HandleCallResult() {
+        caller.call("add", new Object[]{1, 2}).then(new Callable() {
             @Override
-            public void handle(Object json) {
+            public Object call(Object json) {
                 try {
                     if ((int) json != 3) {
                         throw new Exception(json + "!=" + 3);
@@ -59,10 +61,12 @@ public class ExampleInstrumentedTest {
                 } finally {
                     signal.countDown();
                 }
+                return null;
             }
-
+        }).doCatch(new Callable() {
             @Override
-            public void handleError(JSONObject errorInfo) {
+            public Object call(Object err) {
+                JSONObject errorInfo = (JSONObject) err;
                 try {
                     errors[0] = new Exception(errorInfo.getString("msg"));
                 } catch (JSONException e) {
@@ -70,6 +74,7 @@ public class ExampleInstrumentedTest {
                     errors[0] = e;
                 }
                 signal.countDown();
+                return null;
             }
         });
 
@@ -101,9 +106,9 @@ public class ExampleInstrumentedTest {
 
         JSONArray paramB = new JSONArray();
         paramB.put("ppp");
-        caller.call("test", new Object[]{paramA, paramB}, new HandleCallResult() {
+        caller.call("test", new Object[]{paramA, paramB}).then(new Callable() {
             @Override
-            public void handle(Object json) {
+            public Object call(Object json) {
                 System.out.println(json);
                 try {
                     JSONObject jobj = (JSONObject) json;
@@ -118,10 +123,12 @@ public class ExampleInstrumentedTest {
                 } finally {
                     signal.countDown();
                 }
+                return null;
             }
-
+        }).doCatch(new Callable() {
             @Override
-            public void handleError(JSONObject errorInfo) {
+            public Object call(Object err) {
+                JSONObject errorInfo = (JSONObject) err;
                 System.out.println(errorInfo);
                 try {
                     errors[0] = new Exception(errorInfo.getString("msg"));
@@ -130,6 +137,7 @@ public class ExampleInstrumentedTest {
                     errors[0] = e;
                 }
                 signal.countDown();
+                return null;
             }
         });
 
@@ -155,15 +163,19 @@ public class ExampleInstrumentedTest {
         final CountDownLatch signal = new CountDownLatch(1);
         final Exception[] errors = {null};
 
-        caller.call("error", new Object[]{}, new HandleCallResult() {
+        caller.call("error", new Object[]{}).then(new Callable() {
             @Override
-            public void handle(Object json) {
+            public Object call(Object prev) {
                 errors[0] = new Exception("unexpected");
                 signal.countDown();
+                return null;
             }
-
+        }).doCatch(new Callable() {
             @Override
-            public void handleError(JSONObject errorInfo) {
+            public Object call(Object prev) {
+                System.out.println("**********************");
+                System.out.println(prev);
+                JSONObject errorInfo = (JSONObject) prev;
                 try {
                     if (!errorInfo.getString("msg").equals("error test")) {
                         throw new Exception("error msg is not error test");
@@ -174,6 +186,7 @@ public class ExampleInstrumentedTest {
                 } finally {
                     signal.countDown();
                 }
+                return null;
             }
         });
 
@@ -194,5 +207,3 @@ public class ExampleInstrumentedTest {
         assertNull(errors[0]);
     }
 }
-
-

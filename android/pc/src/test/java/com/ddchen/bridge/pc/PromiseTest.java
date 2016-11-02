@@ -139,7 +139,7 @@ public class PromiseTest {
         p.then(new Callable() {
             @Override
             public Object call(Object prev) {
-                return (Double)prev / 10;
+                return (Double) prev / 10;
             }
         }).doCatch(new Callable() {
             @Override
@@ -148,5 +148,68 @@ public class PromiseTest {
                 return null;
             }
         });
+    }
+
+    @Test
+    public void doCatch_test3() throws Exception {
+        Promise p = new Promise(new State() {
+            @Override
+            public void appoint(final Finish finish) {
+                finish.reject("haha");
+            }
+        });
+
+        p.then(new Callable() {
+            @Override
+            public Object call(Object prev) {
+                return null;
+            }
+        }).doCatch(new Callable() {
+            @Override
+            public Object call(Object prev) {
+                System.out.println(prev);
+                assertEquals(prev.toString().trim(), "haha");
+                return null;
+            }
+        });
+    }
+
+    @Test
+    public void doCatch_test4() throws Exception {
+        final CountDownLatch signal = new CountDownLatch(1);
+
+        Promise p = new Promise(new State() {
+            @Override
+            public void appoint(final Finish finish) {
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            Thread.sleep(1000);
+                            finish.reject("haha");
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }).start();
+            }
+        });
+
+        p.then(new Callable() {
+            @Override
+            public Object call(Object prev) {
+                return null;
+            }
+        }).doCatch(new Callable() {
+            @Override
+            public Object call(Object prev) {
+                System.out.println(prev);
+                assertEquals(prev.toString().trim(), "haha");
+                signal.countDown();
+                return null;
+            }
+        });
+
+        signal.await();
     }
 }

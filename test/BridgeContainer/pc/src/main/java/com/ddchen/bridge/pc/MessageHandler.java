@@ -1,5 +1,6 @@
 package com.ddchen.bridge.pc;
 
+import com.ddchen.bridge.pc.Promise.Callable;
 import com.ddchen.bridge.pcinterface.HandleCallResult;
 import com.ddchen.bridge.pcinterface.Sender;
 
@@ -80,7 +81,7 @@ public class MessageHandler {
 
     public void handleRequest(JSONObject jObject) throws JSONException {
         JSONObject data = jObject.getJSONObject("data");
-        String id = data.getString("id");
+        final String id = data.getString("id");
 
         JSONObject source = data.getJSONObject("source");
         String methodName = source.getString("name");
@@ -88,7 +89,17 @@ public class MessageHandler {
 
         try {
             if (sandbox.containsKey(methodName)) {
-                sender.send(assembleResponse(getFunctionRet(sandbox, methodName, args), id));
+                Promise.resolve(getFunctionRet(sandbox, methodName, args)).then(new Callable() {
+                    @Override
+                    public Object call(Object prev) {
+                        try {
+                            sender.send(assembleResponse(prev, id));
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                        return null;
+                    }
+                });
             } else {
                 throw new Error("missing method " + methodName);
             }

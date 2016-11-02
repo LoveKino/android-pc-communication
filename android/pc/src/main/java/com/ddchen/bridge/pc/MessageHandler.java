@@ -88,7 +88,8 @@ public class MessageHandler {
 
         try {
             if (sandbox.containsKey(methodName)) {
-                sender.send(assembleResponse(getFunctionRet(sandbox, methodName, args), id));
+                sender.send(assembleResponse(
+                        getFunctionRet(sandbox, methodName, args), id));
             } else {
                 throw new Error("missing method " + methodName);
             }

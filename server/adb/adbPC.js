@@ -3,8 +3,14 @@
 let {
     pc
 } = require('general-bridge');
-
+let path = require('path');
+let idgener = require('idgener');
+let promisify = require('promisify-node');
+let fs = promisify('fs');
 let spawnp = require('spawnp');
+let del = require('del');
+
+let log = console.log; //eslint-disable-line
 
 module.exports = (accept) => {
     let handlers = {};
@@ -33,8 +39,10 @@ module.exports = (accept) => {
 
     let disConnect = (commandJsonPath, commandDir) => {
         delete handlers[commandJsonPath];
-        accepts[commandDir].stop();
-        delete accepts[commandDir];
+        if (accepts[commandDir]) {
+            accepts[commandDir].stop();
+            delete accepts[commandDir];
+        }
     };
 
     return {
@@ -43,8 +51,26 @@ module.exports = (accept) => {
     };
 };
 
-let send = (commandJsonPath, cmd) => {
-    return spawnp(`adb shell [ -f ${commandJsonPath} ]`).then(() => {
-        return spawnp('adb shell echo', [`'${JSON.stringify(cmd)}'`, '>', commandJsonPath]);
+let send = (commandJsonPath, data) => {
+    let dir = path.join(__dirname, `./tmp/${idgener()}`);
+    let commandPath = path.join(dir, path.basename(commandJsonPath));
+
+    return spawnp.pass(`adb shell [ -f ${commandJsonPath} ]`).then((ret) => {
+        if (ret) {
+            return fs.mkdir(dir).then(() => {
+                return fs.writeFile(commandPath, JSON.stringify(data), 'utf-8').then(() => {
+                    return spawnp(spawnp.pipeLine([`cat ${commandPath}`, `adb shell tee ${commandJsonPath}`]));
+                });
+            }).then(() => {
+                return del([dir], {
+                    force: true
+                });
+            }).catch(err => {
+                log(err);
+                return del([dir], {
+                    force: true
+                });
+            });
+        }
     });
 };

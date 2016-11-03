@@ -55,17 +55,20 @@ module.exports = (accept) => {
 };
 
 let send = (channel, data) => {
-    let dir = path.join(tmpDir, `${idgener()}`);
-    let commandPath = path.join(dir, 'command-backup.json');
+    let idName = idgener();
+    let dir = path.join(tmpDir, idName);
+    let commandPath = path.join(dir, `${idName}-command-backup.json`);
 
     return spawnp.pass(`adb shell [ -d ${channel} ]`).then((ret) => {
         if (ret) {
             return fs.mkdir(dir).then(() => {
                 return fs.writeFile(commandPath, JSON.stringify(data), 'utf-8').then(() => {
                     return pushFile(commandPath, channel).then(() => {
+                        let backupCommandPath = path.join(channel, path.basename(commandPath));
+                        let targetCommandPath = path.join(channel, `${idName}-command.json`);
                         // rename
                         return spawnp([
-                            `adb shell mv ${path.join(channel, path.basename(commandPath))} ${path.join(channel, 'command.json')}`
+                            `adb shell mv ${backupCommandPath} ${targetCommandPath}`
                         ]);
                     });
                 });

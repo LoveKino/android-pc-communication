@@ -67,7 +67,11 @@ public class MessageHandler {
                 if (responseData.has("error") && responseData.get("error") != null) {
                     finish.reject(responseData.get("error"));
                 } else {
-                    finish.resolve(responseData.get("data"));
+                    if (responseData.has("data")) {
+                        finish.resolve(responseData.get("data"));
+                    } else {
+                        finish.resolve(null);
+                    }
                 }
                 idMap.remove(id);
             }

@@ -12,7 +12,7 @@ let pkgName = 'com.ddchen.bridge.bridgecontainer';
 
 let commandDir = `/data/user/0/${pkgName}/files/aosp_hook/output`;
 
-let channel = `/data/user/0/${pkgName}/files/aosp_hook/command.json`;
+let channel = `/data/user/0/${pkgName}/files/aosp_hook/command`;
 
 let mainActivity = `${pkgName}.MainActivity`;
 
@@ -70,11 +70,11 @@ describe('adb', () => {
     });
 
     it('node communicate to app', (done) => {
-        launchApp(testPkgDir, pkgName, mainActivity).then(() => {
-            let {
-                connect
-            } = adbCon();
+        let {
+            connect
+        } = adbCon();
 
+        launchApp(testPkgDir, pkgName, mainActivity).then(() => {
             return connect(channel, commandDir);
         }).then((call) => {
             return call('subtraction', [4, 3]).then(ret => {

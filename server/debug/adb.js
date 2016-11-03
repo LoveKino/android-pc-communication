@@ -2,16 +2,15 @@
 
 let adbCon = require('../adb');
 
-let {
-    connect
-} = adbCon();
-
 let log = console.log; // eslint-disable-line
 
 let commandDir = '/data/user/0/com.ddchen.bridge.bridgecontainer/files/aosp_hook/output';
 
-let channel = '/data/user/0/com.ddchen.bridge.bridgecontainer/files/aosp_hook/command.json';
+let channel = '/data/user/0/com.ddchen.bridge.bridgecontainer/files/aosp_hook/command';
 
+let {
+    connect
+} = adbCon();
 connect(channel, commandDir, {
     add: (a, b) => {
         log(`add ${a} ${b}`);

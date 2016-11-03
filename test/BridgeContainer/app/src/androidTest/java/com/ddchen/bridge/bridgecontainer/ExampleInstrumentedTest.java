@@ -32,7 +32,7 @@ public class ExampleInstrumentedTest {
         // Context of the app under test.
         AdbPc adbPc = new AdbPc();
         String commandDir = "/data/user/0/com.ddchen.bridge.bridgecontainer/files/aosp_hook/output";
-        String channel = "/data/user/0/com.ddchen.bridge.bridgecontainer/files/aosp_hook/command.json";
+        String channel = "/data/user/0/com.ddchen.bridge.bridgecontainer/files/aosp_hook/command";
         this.caller = adbPc.pc(channel, commandDir, null);
     }
 

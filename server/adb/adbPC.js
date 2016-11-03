@@ -9,16 +9,19 @@ let promisify = require('promisify-node');
 let fs = promisify('fs');
 let spawnp = require('spawnp');
 let del = require('del');
+let pushFile = require('./pushFile');
 
 let log = console.log; //eslint-disable-line
+
+const tmpDir = path.join(__dirname, 'tmp');
 
 module.exports = (accept) => {
     let handlers = {};
     let accepts = {};
 
-    let connect = (commandJsonPath, commandDir, sandbox) => {
+    let connect = (channel, commandDir, sandbox) => {
         accepts[commandDir] = accept(commandDir);
-        let sendByChannel = (msg) => send(commandJsonPath, msg);
+        let sendByChannel = (msg) => send(channel, msg);
 
         return accepts[commandDir].start((outStr) => {
             let {
@@ -30,15 +33,15 @@ module.exports = (accept) => {
             }
         }).then(() => {
             return pc((handler, send) => {
-                handlers[commandJsonPath] = (data) => {
+                handlers[channel] = (data) => {
                     return handler(data, send);
                 };
             }, sendByChannel, sandbox);
         });
     };
 
-    let disConnect = (commandJsonPath, commandDir) => {
-        delete handlers[commandJsonPath];
+    let disConnect = (channel, commandDir) => {
+        delete handlers[channel];
         if (accepts[commandDir]) {
             accepts[commandDir].stop();
             delete accepts[commandDir];
@@ -51,15 +54,20 @@ module.exports = (accept) => {
     };
 };
 
-let send = (commandJsonPath, data) => {
-    let dir = path.join(__dirname, `./tmp/${idgener()}`);
-    let commandPath = path.join(dir, path.basename(commandJsonPath));
+let send = (channel, data) => {
+    let dir = path.join(tmpDir, `${idgener()}`);
+    let commandPath = path.join(dir, 'command-backup.json');
 
-    return spawnp.pass(`adb shell [ -f ${commandJsonPath} ]`).then((ret) => {
+    return spawnp.pass(`adb shell [ -d ${channel} ]`).then((ret) => {
         if (ret) {
             return fs.mkdir(dir).then(() => {
                 return fs.writeFile(commandPath, JSON.stringify(data), 'utf-8').then(() => {
-                    return spawnp(spawnp.pipeLine([`cat ${commandPath}`, `adb shell tee ${commandJsonPath}`]));
+                    return pushFile(commandPath, channel).then(() => {
+                        // rename
+                        return spawnp([
+                            `adb shell mv ${path.join(channel, path.basename(commandPath))} ${path.join(channel, 'command.json')}`
+                        ]);
+                    });
                 });
             }).then(() => {
                 return del([dir], {

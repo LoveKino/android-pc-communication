@@ -88,6 +88,10 @@ public class MessageHandler {
         JSONObject source = data.getJSONObject("source");
         String methodName = source.getString("name");
         JSONArray args = source.getJSONArray("args");
+        String type = "public";
+        if(source.has("type")) {
+            type = source.getString(type);
+        }
 
         try {
             if (sandbox.containsKey(methodName)) {

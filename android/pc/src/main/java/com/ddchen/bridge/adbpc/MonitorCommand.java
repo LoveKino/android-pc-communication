@@ -48,9 +48,6 @@ public class MonitorCommand {
             observer = new FileObserver(commandDir) {
                 @Override
                 public void onEvent(int event, String f) {
-                    System.out.println("***********************************");
-                    System.out.println(event);
-                    System.out.println(f);
                     if (f != null &&
                             f.indexOf(commadFix) != -1 &&
                             (event == FileObserver.CLOSE_WRITE || event == FileObserver.MOVED_TO)) {
@@ -61,12 +58,12 @@ public class MonitorCommand {
                             byte[] buffer = new byte[(int) commandFile.length()];
                             ins.read(buffer);
                             String command = new String(buffer);
+                            ins.close();
+                            commandFile.delete();
 
                             for (ExecuteCommand handler : finalHandlers) {
                                 handler.execute(command);
                             }
-
-                            ins.close();
                         } catch (FileNotFoundException e) {
                             e.printStackTrace();
                         } catch (IOException e) {
